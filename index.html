@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chakradham Documents</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600&display=swap');
+        body { font-family: 'Noto Sans Bengali', sans-serif; background: #f3f4f6; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <nav class="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-50">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold"><i class="fas fa-book-open mr-2"></i>ডকুমেন্ট লাইব্রেরি</h1>
+            <span id="fileCount" class="text-xs bg-indigo-900 px-2 py-1 rounded">0 Files</span>
+        </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto p-4">
+        
+        <div class="mb-6">
+            <input type="text" id="searchInput" onkeyup="filterFiles()" placeholder="ফাইলের নাম দিয়ে খুঁজুন..." 
+                class="w-full p-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div id="loading" class="text-center py-10 text-gray-500">
+            <i class="fas fa-circle-notch fa-spin fa-2x text-indigo-500"></i>
+            <p class="mt-2 text-sm">Loading files from GitHub...</p>
+        </div>
+
+        <div id="fileList" class="space-y-3"></div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // ⚙️ কনফিগারেশন (এখানে আপনার তথ্য দিন)
+        // ==========================================
+        const CONFIG = {
+            username: "nabendudebnathbharatiya-bot",  // যেমন: rahul123
+            repo: "https://github.com/nabendudebnathbharatiya-bot/My-pdf-assets.git",             // যেমন: chakradham-docs
+            folder: "documents"                 // ফোল্ডারের নাম
+        };
+
+        // ==========================================
+        // 🚀 মেইন লজিক (API Call)
+        // ==========================================
+        async function fetchFiles() {
+            const listContainer = document.getElementById('fileList');
+            const loading = document.getElementById('loading');
+            const countBadge = document.getElementById('fileCount');
+
+            try {
+                // GitHub API URL creation
+                const apiUrl = `https://api.github.com/repos/${CONFIG.username}/${CONFIG.repo}/contents/${CONFIG.folder}`;
+                
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) throw new Error("Repository not found or Empty");
+                
+                const data = await response.json();
+                
+                // Hide Loading
+                loading.style.display = 'none';
+
+                // Filter only Files (ignore sub-folders)
+                const files = data.filter(item => item.type === 'file');
+                countBadge.innerText = `${files.length} Files`;
+
+                // Render List
+                files.forEach(file => {
+                    // Create Direct View Link (GitHub Pages)
+                    const viewLink = `https://${CONFIG.username}.github.io/${CONFIG.repo}/${CONFIG.folder}/${file.name}`;
+                    
+                    const card = document.createElement('div');
+                    card.className = "file-card bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex justify-between items-center hover:shadow-md transition";
+                    card.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="bg-red-100 text-red-600 w-10 h-10 rounded flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-file-pdf text-lg"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h3 class="font-bold text-gray-800 text-sm truncate pr-2" title="${file.name}">${file.name}</h3>
+                                <p class="text-xs text-gray-500">${(file.size / 1024).toFixed(1)} KB</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <a href="${viewLink}" target="_blank" class="bg-indigo-50 text-indigo-600 px-3 py-2 rounded text-xs font-bold hover:bg-indigo-100">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <button onclick="copyLink('${viewLink}')" class="bg-gray-100 text-gray-600 px-3 py-2 rounded text-xs hover:bg-gray-200">
+                                <i class="fas fa-link"></i>
+                            </button>
+                        </div>
+                    `;
+                    listContainer.appendChild(card);
+                });
+
+            } catch (error) {
+                loading.innerHTML = `<p class="text-red-500 font-bold">Error: ${error.message}</p><p class="text-xs text-gray-400 mt-1">Check username/repo name in code.</p>`;
+            }
+        }
+
+        // ==========================================
+        // 🔍 সার্চ ফাংশন
+        // ==========================================
+        function filterFiles() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.getElementsByClassName('file-card');
+
+            for (let i = 0; i < cards.length; i++) {
+                const title = cards[i].querySelector('h3').innerText.toLowerCase();
+                if (title.includes(input)) {
+                    cards[i].style.display = "flex";
+                } else {
+                    cards[i].style.display = "none";
+                }
+            }
+        }
+
+        // 📋 কপি লিংক ফাংশন
+        function copyLink(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("লিংক কপি হয়েছে!");
+            });
+        }
+
+        // Start App
+        fetchFiles();
+    </script>
+</body>
+</html>
